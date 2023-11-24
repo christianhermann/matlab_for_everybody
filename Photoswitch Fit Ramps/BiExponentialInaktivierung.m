@@ -1,4 +1,4 @@
-addpath(genpath('U:\Projekte an Analysis1\Christian\Matlab for everybody\Photoswitch Fit Ramps'))
+addpath(genpath('U:\Projekte an Analysis1\Christian\Matlab_for_everybody\Photoswitch Fit Ramps'))
 close all;
 %StartWerte = [1; 25; 1; 100] von Christian: A1;T1;A2;T2 (äquvalent zu
 %Origin)
