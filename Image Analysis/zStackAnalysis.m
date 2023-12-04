@@ -1,14 +1,15 @@
 %% Settings %%
-imgSettings.Width = 33.2106; % microns
-imgSettings.Height = 33.2106; % microns
-imgSettings.Depth = 14.2; % microns
-imgSettings.Dimensions = [1000 1000 71]; %[x y z]
-imgSettings.Voxelsize = [0 0 0];
-imgSettings.Voxelsize(1) = imgSettings.Width  /  imgSettings.Dimensions(1);
-imgSettings.Voxelsize(2) = imgSettings.Height  /  imgSettings.Dimensions(2);
-imgSettings.Voxelsize(3) = imgSettings.Depth  /  imgSettings.Dimensions(3);
-imgSettings.voxelVolume = prod(imgSettings.Voxelsize); %um³
+zStacksSettings.Width = 33.2106; % microns
+zStacksSettings.Height = 33.2106; % microns
+zStacksSettings.Depth = 14.2; % microns
+zStacksSettings.Dimensions = [1000 1000 71]; %[x y z]
+zStacksSettings.Voxelsize = [0 0 0];
+zStacksSettings.Voxelsize(1) = zStacksSettings.Width  /  zStacksSettings.Dimensions(1);
+zStacksSettings.Voxelsize(2) = zStacksSettings.Height  /  zStacksSettings.Dimensions(2);
+zStacksSettings.Voxelsize(3) = zStacksSettings.Depth  /  zStacksSettings.Dimensions(3);
+zStacksSettings.voxelVolume = prod(zStacksSettings.Voxelsize); %um³
 bgMultiplier = 1.01;
+load("plotSettings.mat");
 %% Import Image Data and Labels %% 
 
 filePathStainingNucleus = "pAz_cpmTq2-MR + NucSpot 650 starving_NucSpot.tif";
@@ -57,10 +58,10 @@ zStacks.NuclearReceptor.labels.Cytoplasma.Drawn = zStacks.NuclearReceptor.Intens
 zStacks.NuclearReceptor.IntensitiesWithoutBackground = zStacks.NuclearReceptor.Intensities - zStacks.NuclearReceptor.Background;
 
 %% Volumes
-volume.Cell = sum(labels.Cell.Drawn(:)) * imgSettings.voxelVolume;
-volume.Nucleus = sum(labels.Nucleus.Drawn(:)) * imgSettings.voxelVolume;
-volume.CytoplasmaLabel = sum(labels.Cytoplasma.Drawn(:)) * imgSettings.voxelVolume;
-volume.CytoplasmaBG = sum(labels.Cytoplasma.Calculated(:)) * imgSettings.voxelVolume;
+volume.Cell = sum(labels.Cell.Drawn(:)) * zStacksSettings.voxelVolume;
+volume.Nucleus = sum(labels.Nucleus.Drawn(:)) * zStacksSettings.voxelVolume;
+volume.CytoplasmaLabel = sum(labels.Cytoplasma.Drawn(:)) * zStacksSettings.voxelVolume;
+volume.CytoplasmaBG = sum(labels.Cytoplasma.Calculated(:)) * zStacksSettings.voxelVolume;
 volume.ratioNucleusCell = volume.Nucleus / volume.Cell;
 volume.ratioNucleusCytoplasmaDrawn = volume.Nucleus / volume.CytoplasmaLabel;
 volume.ratioNucleusCytoplasmaCalculated = volume.Nucleus / volume.CytoplasmaBG;
@@ -110,16 +111,53 @@ flatStruct = flattenStruct(flattenStruct(flattenStruct(intensity)));
 intensityTable = struct2table(flatStruct);
 intensityTable.name = [filePathNuclearReceptor filePathStainingCytoplasma filePathStainingNucleus];
 %% Plot
-A = [imgSettings.Voxelsize(1) 0 0 0; 0 imgSettings.Voxelsize(2) 0 0; 0 0 imgSettings.Voxelsize(3) 0; 0 0 0 1];
+A = [zStacksSettings.Voxelsize(1) 0 0 0; 0 zStacksSettings.Voxelsize(2) 0 0; 0 0 zStacksSettings.Voxelsize(3) 0; 0 0 0 1];
 tform = affinetform3d(A);
 
-viewer = viewer3d(BackgroundColor="black", GradientColor=[0.5 0.5 0.5],Lighting="on",BackgroundGradient="off");
-volBGCorrected = volshow(zStacks.NuclearReceptor.IntensitiesWithoutBackground, objectConfig, "Transformation",tform, "Parent", viewer);
+viewerMIP = viewer3d(BackgroundColor="black", GradientColor=[0.5 0.5 0.5],Lighting="on",BackgroundGradient="off");
+volBGCorrectedMIP = volshow(zStacks.NuclearReceptor.IntensitiesWithoutBackground, plotSettings.MIP, "Transformation",tform, "Parent", viewerMIP);
+viewerGrad = viewer3d(BackgroundColor="black", GradientColor=[0.5 0.5 0.5],Lighting="on",BackgroundGradient="off");
+volBGCorrectedGrad = volshow(zStacks.NuclearReceptor.IntensitiesWithoutBackground, plotSettings.Gradient, "Transformation",tform, "Parent", viewerGrad);
+viewerVol = viewer3d(BackgroundColor="black", GradientColor=[0.5 0.5 0.5],Lighting="on",BackgroundGradient="off");
+volBGCorrectedVol = volshow(zStacks.NuclearReceptor.IntensitiesWithoutBackground, plotSettings.Volume, "Transformation",tform, "Parent", viewerVol);
 
-volBGCorrected = volshow(zStacks.NuclearReceptor.IntensitiesWithoutBackground, objectConfig, "Transformation",tform);
-viewer = volBGCorrected.Parent;
-frame = getframe(viewer.Parent);
+frameMIP = getframe(viewerMIP.Parent);
+fMIP = figure('Position',[0 0 561 421]);
+axMIP = axes(fMIP);
+imagesc(axMIP,frameMIP.cdata);
 
-f2 = figure('Position',[0 0 561 421]);
-ax2 = axes(f2);
-imagesc(ax2,frame.cdata);
+frameGrad = getframe(viewerGrad.Parent);
+fGrad = figure('Position',[0 0 561 421]);
+axGrad = axes(fGrad);
+imagesc(axGrad,frameGrad.cdata);
+
+frameVol = getframe(viewerVol.Parent);
+fVol = figure('Position',[0 0 561 421]);
+axVol = axes(fVol);
+imagesc(axVol,frameVol.cdata);
+
+hFig = viewerMIP.Parent;
+sz = size(zStacks.NuclearReceptor.IntensitiesWithoutBackground);
+center = sz/2 + 0.5;
+filename = "animated.gif";
+numberOfFrames = 48;
+vec = linspace(0,2*pi,numberOfFrames)';
+dist = sqrt(sz(1)^2 + sz(2)^2 + sz(3)^2);
+myPosition = center + ([cos(vec) sin(vec) ones(size(vec))]*dist);
+
+for idx = 1:length(vec)
+    % Update the current view
+    viewerMIP.CameraPosition = myPosition(idx,:);
+    % Capture the image using the getframe function
+    I = getframe(hFig);
+    [indI,cm] = rgb2ind(I.cdata,256);
+    % Write the frame to the GIF file
+    if idx==1
+        % Do nothing. The first frame displays only the viewer, not the
+        % volume.
+    elseif idx == 2
+        imwrite(indI,cm,filename,"gif",Loopcount=inf,DelayTime=0)
+    else
+        imwrite(indI,cm,filename,"gif",WriteMode="append",DelayTime=0)
+    end
+end
