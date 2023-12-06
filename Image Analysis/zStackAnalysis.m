@@ -106,7 +106,7 @@ intensity.Ratio.Median.BGCorrected.NucleusCell = intensity.Median.BGCorrected.Nu
 intensity.Ratio.Median.BGCorrected.NucleusCytoplasmaDrawn = intensity.Median.BGCorrected.Nucleus / intensity.Median.BGCorrected.CytoplasmaLabel;
 intensity.Ratio.Median.BGCorrected.NucleusCytoplasmaCalculated = intensity.Median.BGCorrected.Nucleus / intensity.Median.BGCorrected.CytoplasmaBG;
 
-flatStruct = flattenStruct(flattenStruct(flattenStruct(intensity)));
+flatStruct = flattenStruct(intensity);
 
 intensityTable = struct2table(flatStruct);
 intensityTable.name = [filePathNuclearReceptor filePathStainingCytoplasma filePathStainingNucleus];
