@@ -95,3 +95,5 @@ clusterTable.Volume = volumes * zStacksSettings.voxelVolume;
 clusterTable.Name = repmat(filePathNuclearReceptor, height(clusterTable),1);
 clusterTable.Size = volumes;
 clusterTable.Cluster = (1:height(clusterTable))';
+
+writetable(clusterTable, "cluster.xlsx");
